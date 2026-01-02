@@ -1,12 +1,36 @@
 import React, { useState, useRef } from 'react';
 import { TaxReturnData, INITIAL_DATA, MenuType } from './types';
 import { QRCodeSVG } from 'qrcode.react';
-import { Download, QrCode, FileText, RefreshCw, CheckCircle2, Hash, ShieldCheck } from 'lucide-react';
+import { Download, QrCode, FileText, RefreshCw, CheckCircle2, Hash, ShieldCheck, Lock, User, LogIn, LogOut } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState(false);
+
   const [formData, setFormData] = useState<TaxReturnData>(INITIAL_DATA);
   const [activeMenu, setActiveMenu] = useState<MenuType>('acknowledgement');
   const qrRef = useRef<SVGSVGElement>(null);
+
+  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLoginError(false);
+    setLoginForm({ ...loginForm, [e.target.name]: e.target.value });
+  };
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginForm.username === 'admin' && loginForm.password === 'admin') {
+      setIsLoggedIn(true);
+      setLoginError(false);
+    } else {
+      setLoginError(true);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setLoginForm({ username: '', password: '' });
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,10 +73,86 @@ const App: React.FC = () => {
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   };
 
-  // Specific output formats requested by the user
   const qrValue = activeMenu === 'acknowledgement'
     ? `https://api.etaxnbr.gov.bd/filingservice/v3/api/verify-psr?tin=${formData.tin}&ay=${formData.assessmentYear}`
     : `TIN:${formData.tin}, Reference No:${formData.referenceNumber}`;
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-4 font-sans">
+        <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.08)] overflow-hidden border border-gray-100/50">
+          <div className="bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-950 p-10 text-white text-center relative overflow-hidden">
+            <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
+            <div className="relative z-10">
+              <div className="flex justify-center mb-6">
+                <div className="bg-white/10 backdrop-blur-md p-4 rounded-3xl border border-white/20">
+                  <Lock className="w-10 h-10 text-emerald-300" />
+                </div>
+              </div>
+              <h1 className="text-3xl font-black tracking-tight mb-2 uppercase">Secure Login</h1>
+              <p className="text-emerald-100/70 text-sm font-medium">Please enter your credentials to access the QR Generator</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleLoginSubmit} className="p-10 space-y-6">
+            <div className="space-y-4">
+              <div className="group">
+                <label className="block text-[10px] font-black text-gray-400 mb-1.5 uppercase tracking-widest">Username</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="username"
+                    required
+                    value={loginForm.username}
+                    onChange={handleLoginChange}
+                    placeholder="Enter username"
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-600 focus:bg-white outline-none transition-all text-gray-800 font-bold"
+                  />
+                  <User className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                </div>
+              </div>
+
+              <div className="group">
+                <label className="block text-[10px] font-black text-gray-400 mb-1.5 uppercase tracking-widest">Password</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    name="password"
+                    required
+                    value={loginForm.password}
+                    onChange={handleLoginChange}
+                    placeholder="Enter password"
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-600 focus:bg-white outline-none transition-all text-gray-800 font-bold"
+                  />
+                  <Lock className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                </div>
+              </div>
+            </div>
+
+            {loginError && (
+              <div className="bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-wider p-3 rounded-xl border border-red-100 text-center animate-in fade-in zoom-in-95 duration-200">
+                Invalid credentials. Try again.
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-3 py-5 bg-emerald-700 text-white rounded-2xl hover:bg-emerald-800 font-black text-sm shadow-xl shadow-emerald-900/10 transition-all active:scale-95 group"
+            >
+              <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              AUTHENTICATE
+            </button>
+          </form>
+
+          <div className="px-10 pb-10 text-center">
+            <p className="text-[10px] text-gray-400 font-medium">
+              Restricted access for authorized personnel only.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-4 font-sans">
@@ -68,11 +168,13 @@ const App: React.FC = () => {
               <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20">
                 <QrCode className="w-8 h-8 text-emerald-300" />
               </div>
-              <div className="text-right">
-                <span className="inline-block px-3 py-1 bg-emerald-400/20 rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">
-                  NBR Bangladesh
-                </span>
-              </div>
+              <button 
+                onClick={handleLogout}
+                className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/10"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4 text-white" />
+              </button>
             </div>
             <h1 className="text-2xl font-black tracking-tight mb-1">
               {activeMenu === 'acknowledgement' ? 'ACKNOWLEDGEMENT' : 'TAX CERTIFICATE'}
